@@ -1,23 +1,62 @@
-// Wrap all code that interacts with the DOM in a call to jQuery to ensure that
-// the code isn't run until the browser has finished rendering all the elements
-// in the html.
+let savedNotes = {};
+
 $(function () {
-  // TODO: Add a listener for click events on the save button. This code should
-  // use the id in the containing time-block as a key to save the user input in
-  // local storage. HINT: What does `this` reference in the click listener
-  // function? How can DOM traversal be used to get the "hour-x" id of the
-  // time-block containing the button that was clicked? How might the id be
-  // useful when saving the description in local storage?
-  //
-  // TODO: Add code to apply the past, present, or future class to each time
-  // block by comparing the id to the current hour. HINTS: How can the id
-  // attribute of each time-block be used to conditionally add or remove the
-  // past, present, and future classes? How can Day.js be used to get the
-  // current hour in 24-hour time?
-  //
-  // TODO: Add code to get any user input that was saved in localStorage and set
-  // the values of the corresponding textarea elements. HINT: How can the id
-  // attribute of each time-block be used to do this?
-  //
-  // TODO: Add code to display the current date in the header of the page.
+    init();
+    // When user clicks the save button, their input is saved to local storage
+    $('.saveBtn').click(function(e) {
+        console.log($(this));
+        // Identify row by the hour
+        let hourRow = $(this).parent().attr('id').slice(5);
+        console.log(hourRow);
+        // Identify the user text input row
+        let userTextInput = $(this).siblings('textarea').val();
+        console.log(userTextInput);
+        // Use hour as key to the user's input
+        savedNotes[hourRow] = userTextInput;
+        console.log(savedNotes);
+        // Save user's text input to local storage
+        localStorage.setItem("notes", JSON.stringify(savedNotes));
+    });
 });
+
+function init() {
+    // Get user text-input from the local storage
+    let storedString = localStorage.getItem("notes");
+    console.log(storedString);
+    // Convert user input from string to object
+    savedNotes = JSON.parse(storedString);
+    // Set 'savedNotes' object to an empty object if it is null
+    if(savedNotes == null){
+        console.log("nothing in object");
+        savedNotes = {};
+    }
+    console.log(savedNotes);
+    // Display the time on the page's header
+    $('#currentDay').text(dayjs().format("dddd, MMMM D, YYYY h:mm A"));
+    // Create time blocks that use 24-hour time display
+    for (let hour = 9; hour <= 17; hour++) {
+        // Clone the time block template and set it to a var
+        let el = $('#hour-template').clone();
+        // Change the id attribute on the newly cloned time blocks
+        // The id attribute reflects the time the row belongs to
+        el.attr('id', 'hour-' + hour);
+        // Add ':00' to display the 24:00 hour format
+        el.children('.hour').text( hour + ":00");
+        // Set current time var to let time blocks reflect the past, present, or future time
+        let currentTime = parseInt(dayjs().format("HH"));
+        // Compare the time block's time to current time and set classes accordingly
+        if (hour < currentTime) {
+            el.addClass('past');
+        } else if (hour === currentTime) {
+            el.addClass('present');
+        } else {
+            el.addClass('future');
+        }
+        // Remove the hidden attribute (that was hiding the initial template)
+        el.removeAttr('hidden');
+        // Get the value saved in storage
+        el.children("textarea").val(savedNotes[hour]);
+        // Add 'el' time blocks to the #schedule div
+        $('#schedule').append(el);
+    }
+}
